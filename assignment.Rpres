@@ -1,0 +1,64 @@
+```{r setup, include=FALSE}
+opts_chunk$set(cache=TRUE)
+```
+PM2.5 Shiny Apps for Coursera Data Product Course
+========================================================
+author: myoyu
+date: 24/8/2014
+
+What is PM2.5?
+========================================================
+
+Fine particulate matter (PM2.5) is an ambient air pollutant for which there is strong evidence that it is harmful to human health. In the United States, the Environmental Protection Agency (EPA) is tasked with setting national ambient air quality standards for fine PM and for tracking the emissions of this pollutant into the atmosphere. Approximatly every 3 years, the EPA releases its database on emissions of PM2.5. This database is known as the National Emissions Inventory (NEI). You can read more information about the NEI at the EPA National Emissions Inventory web site.
+
+- http://www.epa.gov/ttn/chief/eiinformation.html
+
+PM2.5 Shiny Apps
+========================================================
+
+For each year and for each type of PM source, the NEI records how many tons of PM2.5 were emitted from that source over the course of the entire year. The data that will be use for this project are for 1999, 2002, 2005, and 2008. This application show the total PM2.5 emission over those years and the trend for the selected city.
+
+Algorithm
+========================================================
+
+Total PM2.5 = sum (point+nonpoint+on road) PM2.5 sources 
+- Point sources: Commercial/Industrial/Institutional fuel combustion
+  - Fuel: Coal,natural gas,oil,biomass
+- Non-point sources: Residential
+  - Fuel: Natural gas,oil,wood
+- On Road sources: Vechicle
+
+Output Sample
+========================================================
+
+```{r, echo=FALSE}
+county = 'Baltimore City'
+NEI = readRDS("summarySCC_PM25.rds");
+countyFIPS = read.csv("US_FIPS_Codes.csv", header = TRUE, sep = ",",colClasses=c("FIPSState"="character","FIPSCounty"="character"))
+selectedCounty = countyFIPS[countyFIPS['CountyName'] == county]  
+selectedCountyFIPS = gsub(" ", "", paste(c(selectedCounty[3],selectedCounty[4]),collapse = ''))
+#Filter the data for selected City only
+citydata = subset(NEI,fips %in% selectedCountyFIPS);
+#cumulate emission over years
+emissionsHistbyYear = aggregate(Emissions ~ year,data=citydata,FUN="sum");
+with(emissionsHistbyYear, plot(year, Emissions, , xlab = "Year", ylab = "Total Emissions (tons)", type = "o", col = "blue", xaxt="n", main = paste(c("Total PM2.5 Emissions in", county),collapse = ' ')))
+axis(1, at=emissionsHistbyYear$year, labels=emissionsHistbyYear$year, las=2);
+legend("topright", lty=c(1,1), col = c("green","blue"), legend = c("Trend line","Emissions"));
+#add trend line
+model = lm(Emissions ~ year, emissionsHistbyYear);
+abline(model, col="green", lwd = 2);
+if (model$coefficients[2] < 0)
+{
+  x=(max(emissionsHistbyYear$year)+min(emissionsHistbyYear$year))/2;
+  y=model$coefficients[2]*x+model$coefficients[1];
+  text(x, y, "Decreasing", pos=2, col="green");  
+}else
+{
+  x=(max(emissionsHistbyYear$year)+min(emissionsHistbyYear$year))/2;
+  y=model$coefficients[2]*x+model$coefficients[1];  
+  text(x,y, "Increasing", pos=2, col="green");    
+}
+
+```
+
+
